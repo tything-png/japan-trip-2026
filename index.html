@@ -1,13 +1,16 @@
-
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-<!-- iPhone / iPad 專屬圖標代碼 -->
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本家族夏日自駕遊隨身助手</title>
+    <title>2026關西名古屋</title>
+    
+    <!-- 📱 這裡已為您補上手機桌面專屬 App Icon 代碼 -->
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="icon.png">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -27,6 +30,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
+        /* 日系清新 Apple Glass Effect */
         .glass-nav {
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px);
@@ -34,18 +38,21 @@
             border: 1px solid rgba(230, 230, 230, 0.6);
         }
         
+        /* 拖曳視覺效果 */
         .sortable-ghost {
             opacity: 0.3;
             background-color: #E8F0FE !important;
         }
 
-        .pastel-spot { background-color: #E6F4EA; color: #137333; }
-        .pastel-food { background-color: #FCE8E6; color: #C5221F; }
-        .pastel-hotel { background-color: #E8F0FE; color: #1A73E8; }
-        .pastel-other { background-color: #F1F3F4; color: #5F6368; }
+        /* Pastel 粉彩色系自訂標籤 */
+        .pastel-spot { background-color: #E6F4EA; color: #137333; }      /* 景點 - 粉綠 */
+        .pastel-food { background-color: #FCE8E6; color: #C5221F; }      /* 美食 - 粉紅 */
+        .pastel-hotel { background-color: #E8F0FE; color: #1A73E8; }     /* 住宿 - 粉藍 */
+        .pastel-other { background-color: #F1F3F4; color: #5F6368; }     /* 航班/其他 - 粉灰 */
         
-        .group-elder { background-color: #F3E5F5; color: #7B1FA2; border: 1px solid #E1BEE7; }
-        .group-kid { background-color: #FFFDE7; color: #FBC02D; border: 1px solid #FFF9C4; }
+        /* 組別專屬 Pastel 色 */
+        .group-elder { background-color: #F3E5F5; color: #7B1FA2; border: 1px solid #E1BEE7; }   /* 長輩組 - 粉紫 */
+        .group-kid { background-color: #FFFDE7; color: #FBC02D; border: 1px solid #FFF9C4; }     /* 親子組 - 粉黃 */
     </style>
 </head>
 <body class="max-w-md mx-auto min-h-screen shadow-xl bg-white relative flex flex-col pb-8">
@@ -56,9 +63,10 @@
         <div class="space-y-3 pt-2">
             <div class="flex justify-between items-baseline">
                 <div>
-                    <h1 class="text-xl font-bold tracking-wider text-slate-800">🇯🇵 日本家族自駕遊</h1>
-                    <p class="text-[11px] text-slate-400 font-medium">✨ 2026 夏日清新隨身助手</p>
+                    <h1 class="text-xl font-bold tracking-wider text-slate-800">🇯🇵2026關西名古屋</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">✨樂遊Car GO!</p>
                 </div>
+                <!-- 雙分頁 Tab 切換鈕 -->
                 <div class="bg-slate-100 p-0.5 rounded-full flex space-x-1 border border-slate-200 text-xs">
                     <button @click="currentTab = 'schedule'" :class="{'bg-white font-bold text-blue-600 shadow-sm': currentTab === 'schedule', 'text-slate-500': currentTab !== 'schedule'}" class="px-3 py-1.5 rounded-full transition-all">
                         📅 行程
@@ -73,7 +81,7 @@
             <div class="bg-gradient-to-r from-sky-50 to-blue-50/50 border border-sky-100 rounded-2xl p-3 flex items-center justify-between text-xs text-slate-700 shadow-sm">
                 <div class="flex items-center space-x-2">
                     <span class="text-lg">{{ apiWeather.icon }}</span>
-                    <span class="font-medium">📍當日地區 (<b class="text-blue-600">{{ apiWeather.region }}</b>) 天氣：<b class="text-slate-800">{{ apiWeather.condition }}</b></span>
+                    <span class="font-medium">今日 {{ daysList[selectedDayIndex].dateText }} 預測：<b class="text-slate-800">{{ apiWeather.condition }}</b> (<b class="text-blue-600">{{ apiWeather.region }}</b>)</span>
                 </div>
                 <div class="font-bold bg-white/80 px-2 py-1 rounded-lg border border-sky-100 text-blue-600 flex flex-col items-end">
                     <span>🌡️ {{ apiWeather.temp }}°C</span>
@@ -95,25 +103,30 @@
                 </button>
             </div>
 
+            <!-- 當日主標題 -->
             <div class="text-xs text-slate-500 bg-slate-100/80 p-2 rounded-xl flex justify-between items-center font-medium">
-                <span>📌 {{ daysList[selectedDayIndex].title }}</span>
+                <span>📍 {{ daysList[selectedDayIndex].title }}</span>
                 <span class="text-[10px] text-slate-400">長按右側 ☰ 可上下排序</span>
             </div>
 
-            <!-- 行程卡片 -->
+            <!-- 行程卡片容器 -->
             <div id="schedule-list" class="space-y-3">
                 <div v-for="(item, idx) in currentDaySchedule" :key="item.id" :data-id="item.id" class="relative">
                     
+                    <!-- 交通時間提示 -->
                     <div v-if="idx > 0" class="flex items-center justify-center my-2 text-[11px] text-slate-400 space-x-1.5 py-0.5">
                         <i :class="getTransitIcon(item.transitMode)"></i>
                         <span class="font-medium text-slate-500">接續交通：{{ item.transitTime }}</span>
                     </div>
 
+                    <!-- 行程卡片本體 -->
                     <div :class="getPastelCardClass(item.category)" class="p-4 rounded-2xl shadow-sm border border-slate-100/60 relative flex flex-col justify-between transition-all">
+                        
                         <div class="flex justify-between items-start">
                             <div class="flex items-start space-x-2.5">
                                 <span class="text-lg mt-0.5">{{ getCategoryEmoji(item.category) }}</span>
                                 <div>
+                                    <!-- 行程名稱與標籤 -->
                                     <h3 class="font-bold text-slate-800 text-sm flex flex-wrap items-center gap-1.5">
                                         {{ item.title }}
                                         <span :class="getPastelBadgeClass(item.category)" class="text-[10px] px-2 py-0.5 rounded-full font-medium">
@@ -127,16 +140,19 @@
                                     </p>
                                 </div>
                             </div>
+                            <!-- 僅保留拖曳排序柄（☰） -->
                             <div class="flex space-x-2 text-slate-400 pt-0.5">
                                 <button class="drag-handle cursor-grab active:cursor-grabbing p-1"><i class="fa-solid fa-bars text-xs"></i></button>
                             </div>
                         </div>
 
+                        <!-- 細節欄位 -->
                         <div v-if="item.ticket || item.note" class="mt-3 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl space-y-1 border border-slate-100">
                             <p v-if="item.ticket" class="text-amber-800 font-semibold"><i class="fa-solid fa-ticket mr-1 text-[11px]"></i>費用/收費：{{ item.ticket }}</p>
                             <p v-if="item.note" class="opacity-95 whitespace-pre-line leading-relaxed text-slate-600"><i class="fa-solid fa-bell mr-1 text-yellow-500 text-[10px]"></i>{{ item.note }}</p>
                         </div>
 
+                        <!-- 導航功能按鈕 -->
                         <div class="mt-3 flex justify-end">
                             <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.address || item.title)" 
                                target="_blank" 
@@ -152,7 +168,8 @@
 
         <!-- ==================== 2. 實用資訊分頁 ==================== -->
         <div v-if="currentTab === 'info'" class="space-y-4 flex-1">
-            <!-- 匯率試算 -->
+            
+            <!-- 1. Yen to HKD 匯率換算 (置頂) -->
             <div class="glass-card p-4 rounded-2xl shadow-sm">
                 <h3 class="font-bold text-sm text-slate-800 mb-3">💴 日元匯率試算 (Yen ➔ HKD)</h3>
                 <div class="space-y-2">
@@ -167,30 +184,49 @@
                         </div>
                         <span class="text-xs font-bold text-slate-400 w-12 text-center">HKD $</span>
                     </div>
+                    <p class="text-[10px] text-slate-400 text-right">當前匯率參考：100 JPY ≈ {{ (exchange.rate * 100).toFixed(2) }} HKD</p>
                 </div>
             </div>
 
-            <!-- 酒店備忘 -->
+            <!-- 2. 酒店快速快捷鍵備忘 -->
             <div class="glass-card p-4 rounded-2xl shadow-sm">
                 <h3 class="font-bold text-sm text-slate-800 mb-2">🏨 全程飯店與小木屋密碼</h3>
                 <div class="space-y-2 text-[11px]">
                     <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">1. 琵琶湖萬豪酒店</p><p class="text-slate-500">預約編號: 0YMVN877 | 📞 077-585-6100</p></div>
                     <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">2. 彌富酒店 NUQU (連住2晚)</p><p class="text-slate-500">房號分組: 111 Kay / 113 Mia | 📞 0567-68-4050</p></div>
                     <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">3. 下呂溫泉 望川館</p><p class="text-slate-500">預約編號: 0YMWKQV0 | 📞 0576-25-2048</p></div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="text-red-700 font-bold">🔑 4. 平湯温泉 つゆくさ Cottage 密碼: 7026 ➔ ✓</p></div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">5. Grand Mercure Lake Biwa Resort</p><p class="text-slate-500">📞 0749-64-2000</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="text-red-700 font-bold">🔑 4. 平湯温泉 つゆくさ Cottage 智能鎖解鎖密碼: 7026 ➔ 再按 ✓</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">5. Grand Mercure Lake Biwa Resort</p><p class="text-slate-500">不含正餐獨立訂單 | 📞 0749-64-2000</p></div>
                     <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">6. 大阪溫泉旅館 不死王閣</p><p class="text-slate-500">預約編號: 0UM8K36C | 📞 072-751-3540</p></div>
                 </div>
             </div>
 
-            <!-- 租車資料 -->
-            <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl shadow-sm space-y-2">
-                <h3 class="font-bold text-sm text-emerald-900 flex items-center"><span>🚗 租車自駕合約資料</span></h3>
-                <div class="bg-white/90 p-3 rounded-xl text-xs space-y-1.5 text-slate-700 border border-emerald-100">
-                    <p class="flex justify-between"><span>租車公司：</span><b class="text-slate-900 text-sm">Orix Rent A Car</b></p>
-                    <p class="flex justify-between items-center"><span>電話號碼：</span><a href="tel:0724568780" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">072-456-8780</a></p>
+            <!-- 3. 日本緊急醫療求助 -->
+            <div class="bg-red-50 border border-red-100 p-4 rounded-2xl shadow-sm">
+                <h3 class="font-bold text-sm text-red-700 mb-2"><i class="fa-solid fa-triangle-exclamation mr-2"></i>日本緊急聯絡</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <a href="tel:110" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">報警局 (110)</a>
+                    <a href="tel:119" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">救護車/火警 (119)</a>
                 </div>
             </div>
+
+            <!-- 4. 租車公司重要資訊 (置底) -->
+            <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl shadow-sm space-y-2">
+                <h3 class="font-bold text-sm text-emerald-900 flex items-center">
+                    <span>🚗 租車自駕合約資料</span>
+                </h3>
+                <div class="bg-white/90 p-3 rounded-xl text-xs space-y-1.5 text-slate-700 border border-emerald-100">
+                    <p class="flex justify-between"><span>租車公司：</span><b class="text-slate-900 text-sm">Orix Rent A Car</b></p>
+                    <p class="flex justify-between items-center">
+                        <span>電話號碼：</span>
+                        <a href="tel:0724568780" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md"><i class="fa-solid fa-phone mr-1"></i>072-456-8780</a>
+                    </p>
+                    <div class="pt-1.5 flex justify-end space-x-2">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=Orix+Rent+A+Car+Kansai+Airport" target="_blank" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded-lg font-medium"><i class="fa-solid fa-map-location-dot mr-1"></i>導航至機場店</a>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -203,7 +239,6 @@
                 const currentTab = ref('schedule');
                 const selectedDayIndex = ref(0);
                 
-                // 定義每天對應日本主要停留區域的經緯度 (用來即時撈天氣)
                 const daysList = [
                     { weekday: 'Wed', date: '22', dateText: '7/22', title: 'Day 1: 香港 ➔ 關西機場 ➔ 琵琶湖', lat: 35.05, lon: 135.96, region: '滋賀大津' },
                     { weekday: 'Thu', date: '23', dateText: '7/23', title: 'Day 2: 琵琶湖 ➔ 鈴鹿賽車場 ➔ 彌富', lat: 34.84, lon: 136.54, region: '三重鈴鹿' },
@@ -217,14 +252,11 @@
                 ];
 
                 const exchange = ref({ jpy: null, rate: 0.051 });
-                
-                // 📡 即時天氣數據響應狀態
-                const apiWeather = ref({ condition: '加載中...', temp: '--', feelTemp: '--', icon: '⏳' });
+                const apiWeather = ref({ condition: '加載中...', temp: '--', feelTemp: '--', icon: '⏳', region: '日本' });
 
-                // 呼叫國際氣象局 API，帶入當天目的地的經緯度
+                // 📡 呼叫 Open-Meteo 天氣 API 函數
                 const fetchLiveWeather = async () => {
                     const currentDay = daysList[selectedDayIndex.value];
-                    apiWeather.value.region = currentDay.region;
                     try {
                         const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentDay.lat}&longitude=${currentDay.lon}&current=temperature_20m,apparent_temperature,weather_code&timezone=Asia%2FTokyo`);
                         const data = await response.json();
@@ -234,7 +266,6 @@
                             const feelTemp = Math.round(data.current.apparent_temperature);
                             const code = data.current.weather_code;
                             
-                            // WMO 天氣代碼代入轉換成中文與 Emoji
                             let condition = '晴朗 ☀️';
                             let icon = '☀️';
                             if ([1, 2, 3].includes(code)) { condition = '多雲 🌤️'; icon = '🌤️'; }
@@ -246,14 +277,14 @@
                             apiWeather.value = { condition, temp, feelTemp, icon, region: currentDay.region };
                         }
                     } catch (error) {
-                        apiWeather.value = { condition: '多雲時晴 🌤️', temp: 30, feelTemp: 33, icon: '🌤️', region: currentDay.region };
+                        apiWeather.value = { condition: '晴朗 ☀️', temp: 30, feelTemp: 33, icon: '☀️', region: currentDay.region };
                     }
                 };
 
-                // 當選取不同天，立刻自動重撈該地點的天氣
+                // 當選取日期改變，自動重撈天氣
                 watch(selectedDayIndex, () => { fetchLiveWeather(); });
 
-                // 核心數據
+                // 100% 真實行程數據
                 const masterSchedule = ref([
                     // DAY 1
                     { id: 101, dayIndex: 0, category: '航班', title: '乘搭香港快運 UO 850 航班', flightNo: 'UO 850', duration: '4h 45m', depAirport: 'HKG', depTime: '07:05', arrAirport: 'KIX', arrTime: '11:50', transitMode: 'driving', transitTime: '1小時40分鐘', groupType: '', address: '' },
@@ -263,7 +294,7 @@
 
                     // DAY 2
                     { id: 201, dayIndex: 1, category: '住宿', title: '酒店 Check-out 出發', time: '09:30', ticket: '', transitMode: 'driving', transitTime: '1小時30分鐘', groupType: '', address: '琵琶湖マリオットホテル' },
-                    { id: 202, dayIndex: 1, category: '景點', title: '鈴鹿賽車場樂園 (Suzuka Circuit Park)', time: '11:00 抵達 (09:30 - 18:00)', ticket: '現場自理', transitMode: 'driving', transitTime: '47分鐘', groupType: '', note: '活動：暢玩賽車樂園、參加夏季限定「濕透節慶」活動 💦\n17:00 於樂園內享用晚餐。19:00 準時開車前往下間飯店。', address: '鈴鹿サーキット' },
+                    { id: 202, dayIndex: 1, category: '景點', title: '鈴鹿賽車場樂園 (Suzuka Circuit Park)', time: '11:00 抵達 (09:30 - 18:00)', ticket: '現場自理', transitMode: 'driving', transitTime: '47分鐘', groupType: '', note: '活動：暢玩賽車樂園、假期限定「濕透節慶」活動 💦\n17:00 於樂園內享用晚餐。19:00 準時開車前往下間飯店。', address: '鈴鹿サーキット' },
                     { id: 203, dayIndex: 1, category: '住宿', title: '入住：彌富酒店 NUQU (全室天然溫泉) - 第1晚', time: '20:00 抵達', ticket: '附2份早餐', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '分房：Room 111 - kay / Room 113 - Mia\n客房均附天然溫泉。⚠️今日或聽日要額外買定嘢食當聽日早餐！', address: '弥富ホテルNUQU' },
 
                     // DAY 3
@@ -312,6 +343,34 @@
                     { id: 903, dayIndex: 8, category: '航班', title: '返港：關西機場還車 ➔ UO 689 航班', time: '17:00 抵達機場', flightNo: 'UO 689', duration: '3h 10m', depAirport: 'KIX', depTime: '20:40', arrAirport: 'HKG', arrTime: '23:50', transitMode: 'walking', transitTime: '返抵香港', note: '辦理還車與登機。返回香港，圓滿結束旅程！', address: '' }
                 ]);
 
+                const currentDaySchedule = computed(() => {
+                    return masterSchedule.value.filter(item => item.dayIndex === selectedDayIndex.value);
+                });
+
+                const getPastelCardClass = (category) => {
+                    if (category === '景點') return 'bg-[#E6F4EA]/60 hover:bg-[#E6F4EA]/80';
+                    if (category === '美食') return 'bg-[#FCE8E6]/60 hover:bg-[#FCE8E6]/80';
+                    if (category === '住宿') return 'bg-[#E8F0FE]/60 hover:bg-[#E8F0FE]/80';
+                    return 'bg-[#F1F3F4]/70 hover:bg-[#F1F3F4]/90';
+                };
+
+                const getPastelBadgeClass = (category) => {
+                    if (category === '景點') return 'pastel-spot';
+                    if (category === '美食') return 'pastel-food';
+                    if (category === '住宿') return 'pastel-hotel';
+                    return 'pastel-other';
+                };
+
+                const getCategoryEmoji = (cat) => {
+                    const mapping = { '景點': '📸', '住宿': '🏨', '美食': '🥢', '購物': '🛍️', '航班': '✈️' };
+                    return mapping[cat] || '📍';
+                };
+
+                const getTransitIcon = (mode) => {
+                    if (mode === 'walking') return 'fa-solid fa-person-walking text-emerald-500';
+                    return 'fa-solid fa-car text-blue-500';
+                };
+
                 let sortableInstance = null;
                 const initSortable = () => {
                     nextTick(() => {
@@ -335,7 +394,6 @@
 
                 watch([currentTab, selectedDayIndex], () => { if (currentTab.value === 'schedule') initSortable(); });
                 
-                // 初始化自動加載第一天對應日本城市的天氣
                 onMounted(() => { 
                     fetchLiveWeather();
                     initSortable(); 
