@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日本夏日自駕遊</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Vue 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- SortableJS for Drag and Drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #F8F9FA;
+            color: #4A4A4A;
+            overflow-x: hidden;
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 日系清新 Apple Glass Effect */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(230, 230, 230, 0.6);
+        }
+        
+        /* 拖曳視覺效果 */
+        .sortable-ghost {
+            opacity: 0.3;
+            background-color: #E8F0FE !important;
+        }
+
+        /* Pastel 粉彩色系自訂標籤 */
+        .pastel-spot { background-color: #E6F4EA; color: #137333; }      /* 景點 - 粉綠 */
+        .pastel-food { background-color: #FCE8E6; color: #C5221F; }      /* 美食 - 粉紅/橘 */
+        .pastel-hotel { background-color: #E8F0FE; color: #1A73E8; }     /* 住宿 - 粉藍 */
+        .pastel-other { background-color: #F1F3F4; color: #5F6368; }     /* 航班/其他 - 粉灰 */
+        
+        /* 組別專屬 Pastel 色 */
+        .group-elder { background-color: #F3E5F5; color: #7B1FA2; border: 1px solid #E1BEE7; }   /* 長輩組 - 粉紫 */
+        .group-kid { background-color: #FFFDE7; color: #FBC02D; border: 1px solid #FFF9C4; }     /* 親子組 - 粉黃 */
+    </style>
+</head>
+<body class="max-w-md mx-auto min-h-screen shadow-xl bg-white relative flex flex-col pb-8">
+
+    <div id="app" class="w-full flex-1 flex flex-col p-4 space-y-4">
+        
+        <!-- ==================== 頂部極簡標題與智慧天氣區塊 ==================== -->
+        <div class="space-y-3 pt-2">
+            <div class="flex justify-between items-baseline">
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider text-slate-800">🇯🇵關西名古屋</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">✨自駕遊隨身助手</p>
+                </div>
+                <!-- 雙分頁 Tab 切換鈕 -->
+                <div class="bg-slate-100 p-0.5 rounded-full flex space-x-1 border border-slate-200 text-xs">
+                    <button @click="currentTab = 'schedule'" :class="{'bg-white font-bold text-blue-600 shadow-sm': currentTab === 'schedule', 'text-slate-500': currentTab !== 'schedule'}" class="px-3 py-1.5 rounded-full transition-all">
+                        📅 行程
+                    </button>
+                    <button @click="currentTab = 'info'" :class="{'bg-white font-bold text-blue-600 shadow-sm': currentTab === 'info', 'text-slate-500': currentTab !== 'info'}" class="px-3 py-1.5 rounded-full transition-all">
+                        ℹ️ 資訊
+                    </button>
+                </div>
+            </div>
+
+            <!-- 置頂即時天氣預報 -->
+            <div class="bg-gradient-to-r from-sky-50 to-blue-50/50 border border-sky-100 rounded-2xl p-3 flex items-center justify-between text-xs text-slate-700 shadow-sm">
+                <div class="flex items-center space-x-2">
+                    <i :class="currentWeatherData.icon" class="text-lg text-amber-500"></i>
+                    <span class="font-medium">今日 {{ daysList[selectedDayIndex].dateText }} 預測：<b class="text-slate-800">{{ currentWeatherData.condition }}</b></span>
+                </div>
+                <div class="font-bold bg-white/80 px-2 py-1 rounded-lg border border-sky-100 text-blue-600">
+                    🌡️ {{ currentWeatherData.temp }}°C (體感 {{ currentWeatherData.feelTemp }}°C)
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 1. 每日行程表分頁 ==================== -->
+        <div v-if="currentTab === 'schedule'" class="space-y-4 flex-1 flex flex-col">
+            <!-- 橫向滑動日期選單 -->
+            <div class="flex space-x-2 overflow-x-auto no-scrollbar py-1">
+                <button v-for="(day, index) in daysList" :key="index" 
+                        @click="selectedDayIndex = index"
+                        :class="{'bg-[#3B82F6] text-white shadow-md transform scale-102 font-bold': selectedDayIndex === index, 'bg-slate-50 text-slate-600 border border-slate-100': selectedDayIndex !== index}"
+                        class="flex flex-col items-center justify-center min-w-[56px] h-14 rounded-xl transition-all flex-shrink-0">
+                    <span class="text-[10px] uppercase tracking-wider" :class="selectedDayIndex === index ? 'text-blue-100' : 'text-slate-400'">{{ day.weekday }}</span>
+                    <span class="text-base font-extrabold mt-0.5">{{ day.date }}</span>
+                </button>
+            </div>
+
+            <!-- 當日主標題 -->
+            <div class="text-xs text-slate-500 bg-slate-100/80 p-2 rounded-xl flex justify-between items-center font-medium">
+                <span>📍 {{ daysList[selectedDayIndex].title }}</span>
+                <span class="text-[10px] text-slate-400">長按右側 ☰ 可上下排序</span>
+            </div>
+
+            <!-- 行程卡片容器 -->
+            <div id="schedule-list" class="space-y-3">
+                <div v-for="(item, idx) in currentDaySchedule" :key="item.id" :data-id="item.id" class="relative">
+                    
+                    <!-- 交通時間提示 -->
+                    <div v-if="idx > 0" class="flex items-center justify-center my-2 text-[11px] text-slate-400 space-x-1.5 py-0.5">
+                        <i :class="getTransitIcon(item.transitMode)"></i>
+                        <span class="font-medium text-slate-500">接續交通：{{ item.transitTime }}</span>
+                    </div>
+
+                    <!-- 行程卡片本體 -->
+                    <div :class="getPastelCardClass(item.category)" class="p-4 rounded-2xl shadow-sm border border-slate-100/60 relative flex flex-col justify-between transition-all">
+                        
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-start space-x-2.5">
+                                <span class="text-lg mt-0.5">{{ getCategoryEmoji(item.category) }}</span>
+                                <div>
+                                    <!-- 行程名稱與標籤 -->
+                                    <h3 class="font-bold text-slate-800 text-sm flex flex-wrap items-center gap-1.5">
+                                        {{ item.title }}
+                                        <span :class="getPastelBadgeClass(item.category)" class="text-[10px] px-2 py-0.5 rounded-full font-medium">
+                                            {{ item.category }}
+                                        </span>
+                                        <span v-if="item.groupType === 'elder'" class="group-elder text-[10px] px-2 py-0.5 rounded-full font-bold">👵🏻 長輩組</span>
+                                        <span v-if="item.groupType === 'kid'" class="group-kid text-[10px] px-2 py-0.5 rounded-full font-bold">👶🏻 親子組</span>
+                                    </h3>
+                                    <p v-if="item.time" class="text-xs text-slate-500 mt-1 flex items-center">
+                                        <i class="fa-regular fa-clock mr-1 text-[11px]"></i>{{ item.time }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex space-x-2 text-slate-400 pt-0.5">
+                                <button @click="openEditModal(item)" class="hover:text-blue-500 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button class="drag-handle cursor-grab active:cursor-grabbing p-1"><i class="fa-solid fa-bars text-xs"></i></button>
+                            </div>
+                        </div>
+
+                        <!-- 細節欄位 -->
+                        <div v-if="item.ticket || item.note" class="mt-3 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl space-y-1 border border-slate-100">
+                            <p v-if="item.ticket" class="text-amber-800 font-semibold"><i class="fa-solid fa-ticket mr-1 text-[11px]"></i>費用/收費：{{ item.ticket }}</p>
+                            <p v-if="item.note" class="opacity-95 whitespace-pre-line leading-relaxed text-slate-600"><i class="fa-solid fa-bell mr-1 text-yellow-500 text-[10px]"></i>{{ item.note }}</p>
+                        </div>
+
+                        <!-- 導航功能按鈕 -->
+                        <div class="mt-3 flex justify-end">
+                            <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.address || item.title)" 
+                               target="_blank" 
+                               class="text-xs bg-white text-slate-700 border border-slate-200 px-3 py-1.5 rounded-xl flex items-center space-x-1 shadow-sm font-medium hover:bg-slate-50">
+                                <span>🗺️ Google Map 導航</span>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== 2. 實用資訊分頁 ==================== -->
+        <div v-if="currentTab === 'info'" class="space-y-4 flex-1">
+            
+            <!-- 1. Yen to HKD 匯率換算 (置頂) -->
+            <div class="glass-card p-4 rounded-2xl shadow-sm">
+                <h3 class="font-bold text-sm text-slate-800 mb-3">💴 日元匯率試算 (Yen ➔ HKD)</h3>
+                <div class="space-y-2">
+                    <div class="flex items-center space-x-2">
+                        <input type="number" v-model="exchange.jpy" placeholder="輸入日幣金額" class="flex-1 bg-white p-2 rounded-xl text-sm border border-slate-200 outline-none focus:border-blue-400">
+                        <span class="text-xs font-bold text-slate-400 w-12 text-center">JPY ¥</span>
+                    </div>
+                    <div class="flex items-center justify-center text-slate-300 my-0.5"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex-1 bg-slate-50 p-2 rounded-xl text-sm border border-slate-200 font-bold text-slate-700">
+                            {{ (exchange.jpy * exchange.rate).toFixed(2) }}
+                        </div>
+                        <span class="text-xs font-bold text-slate-400 w-12 text-center">HKD $</span>
+                    </div>
+                    <p class="text-[10px] text-slate-400 text-right">當前匯率參考：100 JPY ≈ {{ (exchange.rate * 100).toFixed(2) }} HKD</p>
+                </div>
+            </div>
+
+            <!-- 2. 酒店快速快捷鍵備忘 -->
+            <div class="glass-card p-4 rounded-2xl shadow-sm">
+                <h3 class="font-bold text-sm text-slate-800 mb-2">🏨 全程飯店與小木屋密碼</h3>
+                <div class="space-y-2 text-[11px]">
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="font-bold text-slate-800">1. 琵琶湖萬豪酒店</p>
+                        <p class="text-slate-500">預約編號: 0YMVN877 | 📞 077-585-6100</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="font-bold text-slate-800">2. 彌富酒店 NUQU (連住2晚)</p>
+                        <p class="text-slate-500">房號分組: 111 Kay / 113 Mia | 📞 0567-68-4050</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="font-bold text-slate-800">3. 下呂溫泉 望川館</p>
+                        <p class="text-slate-500">預約編號: 0YMWKQV0 | 📞 0576-25-2048</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="text-red-700 font-bold">🔑 4. 平湯温泉 つゆくさ Cottage 智能鎖解鎖密碼: 7026 ➔ 再按 ✓</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="font-bold text-slate-800">5. Grand Mercure Lake Biwa Resort</p>
+                        <p class="text-slate-500">不含正餐獨立訂單 | 📞 0749-64-2000</p>
+                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl">
+                        <p class="font-bold text-slate-800">6. 大阪溫泉旅館 不死王閣</p>
+                        <p class="text-slate-500">預約編號: 0UM8K36C | 📞 072-751-3540</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 日本緊急醫療求助 -->
+            <div class="bg-red-50 border border-red-100 p-4 rounded-2xl shadow-sm">
+                <h3 class="font-bold text-sm text-red-700 mb-2"><i class="fa-solid fa-triangle-exclamation mr-2"></i>日本緊急聯絡</h3>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <a href="tel:110" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">報警局 (110)</a>
+                    <a href="tel:119" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">救護車/火警 (119)</a>
+                </div>
+            </div>
+
+            <!-- 4. 租車公司重要資訊 (置底) -->
+            <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl shadow-sm space-y-2">
+                <h3 class="font-bold text-sm text-emerald-900 flex items-center">
+                    <span>🚗 租車自駕合約資料</span>
+                </h3>
+                <div class="bg-white/90 p-3 rounded-xl text-xs space-y-1.5 text-slate-700 border border-emerald-100">
+                    <p class="flex justify-between"><span>租車公司：</span><b class="text-slate-900 text-sm">Orix Rent A Car</b></p>
+                    <p class="flex justify-between items-center">
+                        <span>電話號碼：</span>
+                        <a href="tel:0724568780" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md"><i class="fa-solid fa-phone mr-1"></i>072-456-8780</a>
+                    </p>
+                    <div class="pt-1.5 flex justify-end space-x-2">
+                        <a href="https://www.google.com/maps/dir/?api=1&destination=Orix+Rent+A+Car+Kansai+Airport" target="_blank" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded-lg font-medium"><i class="fa-solid fa-map-location-dot mr-1"></i>導航至機場店</a>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 右下角懸浮按鈕 -->
+        <button v-if="currentTab === 'schedule'" 
+                @click="openAddModal"
+                class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg shadow-lg z-50 hover:bg-blue-700">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <!-- 表單視窗 -->
+        <div v-if="modal.show" class="fixed inset-0 bg-black/40 z-50 flex items-end justify-center backdrop-blur-sm">
+            <div class="bg-white w-full max-w-md rounded-t-[24px] p-6 max-h-[85vh] overflow-y-auto space-y-4">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h3 class="font-bold text-sm text-slate-800">{{ modal.isEdit ? '✏️ 編輯行程資訊' : '➕ 新增自訂行程' }}</h3>
+                    <button @click="modal.show = false" class="text-slate-400 text-base"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+
+                <div class="space-y-3 text-xs">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">行程分類</label>
+                            <select v-model="modalData.category" class="w-full border p-2 rounded-xl text-xs bg-slate-50">
+                                <option>景點</option><option>住宿</option><option>美食</option><option>購物</option><option>航班</option><option>其他</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">分流組別 (選填)</label>
+                            <select v-model="modalData.groupType" class="w-full border p-2 rounded-xl text-xs bg-slate-50">
+                                <option value="">全體共同</option>
+                                <option value="elder">長輩組</option>
+                                <option value="kid">親子組</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-500 mb-1">項目名稱</label>
+                        <input type="text" v-model="modalData.title" class="w-full border p-2 rounded-xl">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">時間 / 營業時間</label>
+                            <input type="text" v-model="modalData.time" class="w-full border p-2 rounded-xl">
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">費用 / 門票</label>
+                            <input type="text" v-model="modalData.ticket" class="w-full border p-2 rounded-xl">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-500 mb-1">導航目的地關鍵字/地址</label>
+                        <input type="text" v-model="modalData.address" class="w-full border p-2 rounded-xl">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">下一站交通工具</label>
+                            <select v-model="modalData.transitMode" class="w-full border p-2 rounded-xl bg-slate-50">
+                                <option value="driving">自駕開車 🚗</option>
+                                <option value="walking">步行 🚶</option>
+                                <option value="transit">大眾運輸 🚌</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-bold text-slate-500 mb-1">接續所需車程</label>
+                            <input type="text" v-model="modalData.transitTime" class="w-full border p-2 rounded-xl">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-500 mb-1">特色備註</label>
+                        <textarea v-model="modalData.note" rows="3" class="w-full border p-2 rounded-xl"></textarea>
+                    </div>
+                </div>
+
+                <div class="flex space-x-2 pt-2 border-t">
+                    <button v-if="modal.isEdit" @click="confirmDelete" class="flex-1 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-xs">
+                        🗑️ 刪除項目
+                    </button>
+                    <button @click="modal.show = false" class="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-medium text-xs">取消</button>
+                    <button @click="saveModalData" class="flex-[2] py-2 bg-blue-600 text-white rounded-xl font-bold text-xs">確認儲存</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onMounted, nextTick, watch } = Vue;
+
+        createApp({
+            setup() {
+                const currentTab = ref('schedule');
+                const selectedDayIndex = ref(0);
+                
+                const daysList = [
+                    { weekday: 'Wed', date: '22', dateText: '7/22', title: 'Day 1: 香港 ➔ 關西機場 ➔ 琵琶湖' },
+                    { weekday: 'Thu', date: '23', dateText: '7/23', title: 'Day 2: 琵琶湖 ➔ 鈴鹿賽車場 ➔ 彌富' },
+                    { weekday: 'Fri', date: '24', dateText: '7/24', title: 'Day 3: 樂高樂園/鐵道館 ➔ 長島 Outlet' },
+                    { weekday: 'Sat', date: '25', dateText: '7/25', title: 'Day 4: 名古屋科學館 ➔ 下呂溫泉' },
+                    { weekday: 'Sun', date: '26', dateText: '7/26', title: 'Day 5: 下呂 ➔ 高山市 ➔ 奧飛驒平湯' },
+                    { weekday: 'Mon', date: '27', dateText: '7/27', title: 'Day 6: 奧飛驒熊牧場 ➔ 新穗高纜車' },
+                    { weekday: 'Tue', date: '28', dateText: '7/28', title: 'Day 7: 奧飛驒 ➔ 里山公園 ➔ 長濱' },
+                    { weekday: 'Wed', date: '29', dateText: '7/29', title: 'Day 8: 彥根 ➔ 琵琶湖博物館 ➔ 任天堂館' },
+                    { weekday: 'Thu', date: '30', dateText: '7/30', title: 'Day 9: 池田 ➔ 濱寺公園 ➔ 臨空城' }
+                ];
+
+                const weatherDataArray = [
+                    { condition: '夏日晴朗 ☀️', temp: 31, feelTemp: 34, icon: 'fa-solid fa-sun' },
+                    { condition: '午後多雲 🌤️', temp: 30, feelTemp: 33, icon: 'fa-solid fa-cloud-sun' },
+                    { condition: '晴空萬里 ☀️', temp: 32, feelTemp: 35, icon: 'fa-solid fa-sun' },
+                    { condition: '山區涼爽 ☁️', temp: 28, feelTemp: 29, icon: 'fa-solid fa-cloud' },
+                    { condition: '午後陣雨 🌦️', temp: 26, feelTemp: 26, icon: 'fa-solid fa-cloud-showers-heavy' },
+                    { condition: '天高氣爽 ☀️', temp: 25, feelTemp: 25, icon: 'fa-solid fa-sun' },
+                    { condition: '明媚晴天 ☀️', temp: 29, feelTemp: 31, icon: 'fa-solid fa-sun' },
+                    { condition: '多雲轉晴 🌤️', temp: 30, feelTemp: 32, icon: 'fa-solid fa-cloud-sun' },
+                    { condition: '酷熱晴朗 ☀️', temp: 33, feelTemp: 37, icon: 'fa-solid fa-sun' }
+                ];
+
+                const currentWeatherData = computed(() => weatherDataArray[selectedDayIndex.value] || weatherDataArray[0]);
+                const exchange = ref({ jpy: null, rate: 0.051 });
+
+                // 核心行程數據
+                const masterSchedule = ref([
+                    // DAY 1
+                    { id: 101, dayIndex: 0, category: '航班', title: '乘搭香港快運 UO 850 航班', flightNo: 'UO 850', duration: '4h 45m', depAirport: 'HKG', depTime: '07:05', arrAirport: 'KIX', arrTime: '11:50', transitMode: 'driving', transitTime: '1小時40分鐘', groupType: '', address: '' },
+                    { id: 102, dayIndex: 0, category: '景點', title: 'La Collina 近江八幡 (童話草屋蛋糕)', time: '16:30 (09:00 - 18:00)', ticket: '免費入園', transitMode: 'driving', transitTime: '30分鐘', groupType: '', note: '活動：園區散步打卡、買年輪蛋糕，順便買定第二朝做早餐！\n電話：0748-33-6666', address: 'ラ コリーナ近江八幡' },
+                    { id: 103, dayIndex: 0, category: '住宿', title: '入住：琵琶湖萬豪酒店 (Lake Biwa Marriott Hotel)', time: '18:30 Check-in', ticket: '', transitMode: 'walking', transitTime: '館內移動', groupType: '', note: '預約編號：0YMVN877\n房型：和室 2間 (每房1男1女 + 2幼兒無床餐)\n費用：每房 23440yen + TAX\n天然溫泉開放時間：6:00 - 24:00', address: '琵琶湖マリオットホテル' },
+                    { id: 104, dayIndex: 0, category: '美食', title: '晚餐：Grill ＆ Dining G (酒店自助餐)', time: '19:45 (限時90分鐘)', ticket: '大人 5950yen / 小學生 4000yen', transitMode: 'driving', transitTime: '次日出發車程 1小時30分鐘', groupType: '', note: '已在 TableCheck 預約。共 11 人 (大人 7名、小學生 1名、5歲2名及2歲1名免費)', address: 'Grill ＆ Dining G' },
+
+                    // DAY 2
+                    { id: 201, dayIndex: 1, category: '住宿', title: '酒店 Check-out 出發', time: '09:30', ticket: '', transitMode: 'driving', transitTime: '1小時30分鐘', groupType: '', address: '琵琶湖マリオットホテル' },
+                    { id: 202, dayIndex: 1, category: '景點', title: '鈴鹿賽車場樂園 (Suzuka Circuit Park)', time: '11:00 抵達 (09:30 - 18:00)', ticket: '現場自理', transitMode: 'driving', transitTime: '47分鐘', groupType: '', note: '活動：暢玩賽車樂園、參加夏季限定「濕透節慶」活動 💦\n17:00 於樂園內享用晚餐。19:00 準時開車前往下間飯店。', address: '鈴鹿サーキット' },
+                    { id: 203, dayIndex: 1, category: '住宿', title: '入住：彌富酒店 NUQU (全室天然溫泉) - 第1晚', time: '20:00 抵達', ticket: '附2份早餐', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '分房：Room 111 - kay / Room 113 - Mia\n客房均附天然溫泉。⚠️今日或聽日要額外買定嘢食當聽日早餐！', address: '弥富ホテルNUQU' },
+
+                    // DAY 3 (分流與續住)
+                    { id: 301, dayIndex: 2, category: '購物', title: '三井 Outlet Park 爵士之夢長島', time: '10:00 - 20:00', ticket: '泊車 1000yen (滿額免費)', transitMode: 'driving', transitTime: '17分鐘', groupType: 'elder', note: '電話：+81-594-45-8700。消費滿 3000 日圓可免當日泊車費。', address: '三井アウトレットパーク ジャズドリーム長島' },
+                    { id: 302, dayIndex: 2, category: '景點', title: '[選項 A] 名古屋樂高樂園 (LEGOLAND Japan)', time: '10:00 - 17:00', ticket: '自理', transitMode: 'driving', transitTime: '17分鐘前往 Outlet', groupType: 'kid', note: '親子組二選一。電話：0570-05-8605', address: 'LEGOLAND Japan' },
+                    { id: 303, dayIndex: 2, category: '景點', title: '[選項 B] リニア・鉄道館 (磁浮鐵道館)', time: '10:00 - 17:30', ticket: '自理', transitMode: 'driving', transitTime: '17分鐘前往 Outlet', groupType: 'kid', note: '親子組二選一。電話：052-389-6100', address: 'リニア 鉄道館' },
+                    { id: 304, dayIndex: 2, category: '美食', title: '全體集合晚餐：長島 Outlet 美食廣場', time: '18:00', ticket: '自理', transitMode: 'driving', transitTime: '17分鐘', groupType: '', note: '備忘：美食廣場最後點餐 20:30，21:00 關門。隨後開車返回酒店。', address: '三井アウトレットパーク ジャズドリーム長島' },
+                    { id: 305, dayIndex: 2, category: '住宿', title: '續住：彌富酒店 NUQU (全室天然溫泉) - 第2晚', time: '21:00 抵達酒店', ticket: '', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '返回彌富酒店 NUQU 連續入住的第二晚，泡湯放鬆休息。', address: '弥富ホテルNUQU' },
+
+                    // DAY 4
+                    { id: 401, dayIndex: 3, category: '景點', title: 'FUJI 名古屋市科學館', time: '10:00 - 13:00', ticket: '自理', transitMode: 'driving', transitTime: '2至2.5小時長途', groupType: '', note: '🅿️ 泊車方案：科學館前第2 (15分300yen) 或 若宮大通公園白川前 (1小時600yen)。\n電話：052-201-4486', address: '名古屋市科学館' },
+                    { id: 402, dayIndex: 3, category: '美食', title: '[選項 1] 農家のパスタ屋 NAPPA 伏見 栄', time: '13:00 - 14:30', ticket: '自理', transitMode: 'driving', transitTime: '開往下呂溫泉', groupType: '', note: '午餐二選一（需預約）。從科學館步行 3 分鐘即可到達。電話：+81-52-204-9078', address: '農家のパスタ屋 NAPPA 伏見 栄' },
+                    { id: 403, dayIndex: 3, category: '美食', title: '[選項 2] 名古屋 PARCO (西館甜點與壽司)', time: '13:00', ticket: '自理', transitMode: 'driving', transitTime: '開往下呂溫泉', groupType: '', note: '午餐二選一（需移動車輛）。西館 1F 吃 HARBS 蛋糕 🍰 / 西館 7F 吃金沢まいもん寿司 🍣 (可上 EPARK 預約)。電話：052-264-8111', address: '名古屋PARCO' },
+                    { id: 404, dayIndex: 3, category: '景點', title: '下呂溫泉街散策', time: '17:00', ticket: '自理', transitMode: 'driving', transitTime: '5分鐘', groupType: '', note: '逛街。推薦「下呂布丁 (Gero Pudding)」(營業至17:00)。或溫泉博物館。', address: '下呂プリン' },
+                    { id: 405, dayIndex: 3, category: '住宿', title: '入住：下呂溫泉 望川館 (ぼうせんかん)', time: '18:00 Check-in', ticket: '一泊二食會席', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '預約編號：0YMWKQV0。包含一泊二食，晚餐為飛騨牛朴葉味噌會席。\n電話：0576-25-2048', address: '下呂温泉 望川館' },
+
+                    // DAY 5
+                    { id: 501, dayIndex: 4, category: '景點', title: '松鼠森林 飛驒山野草自然庭園', time: '09:00 - 10:30', ticket: '成人 880yen / 兒童 440yen', transitMode: 'driving', transitTime: '15分鐘', groupType: '', note: '餵松鼠與小動物互動（停留約 1 小時）\n電話：0577-33-9232', address: 'リスの森 飛騨山野草自然庭園' },
+                    { id: 502, dayIndex: 4, category: '美食', title: '[選項 1] 味の与平 (飛驒牛專門酒藏餐廳)', time: '12:00', ticket: '自理', transitMode: 'driving', transitTime: '48分鐘', groupType: '', note: '高山午餐三選一。地址：〒506-0845 高山市上二之町7番地。電話：0577-35-1224', address: '味の与平' },
+                    { id: 503, dayIndex: 4, category: '美食', title: '[選項 2] 丸明 飛驒高山店 (經典燒肉)', time: '12:00', ticket: '自理', transitMode: 'driving', transitTime: '48分鐘', groupType: '', note: '高山午餐三選一。地址：〒506-0025 高山市天満町6-8。電話：+81-577-35-5858', address: '丸明 飛騨高山店' },
+                    { id: 504, dayIndex: 4, category: '美食', title: '[選項 3] 蕎麥處 明郷 (SOBA明郷)', time: '12:00 (11:00 - 17:00)', ticket: '自理', transitMode: 'driving', transitTime: '48分鐘', groupType: '', note: '高山午餐三選一（位於往奧飛驒路上）。電話：+81-577-79-2165', address: '蕎麦処 明郷' },
+                    { id: 505, dayIndex: 4, category: '住宿', title: '入住：平湯温泉 つゆくさ Cottage (獨立木屋) - 第1晚', time: '15:00 Check-in', ticket: '已付全額', transitMode: 'walking', transitTime: '周邊步行', groupType: '', note: '房型：10 コテージ\n🔑 智能鎖密碼：輸入 [ 7026 ] ➔ 按 [ ✓ ] 鍵解鎖。\n🌐 Wi-Fi: Tsuyukusa1〜6 / 密碼: tsuyukusa1111\n🎁 優惠：出示網頁享免費迷你意式雪糕 🍦', address: '平湯温泉 つゆくさ' },
+                    { id: 506, dayIndex: 4, category: '美食', title: '晚餐及附近推薦', time: '18:00', ticket: '自理', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '周邊推薦：1. あんき屋 (飛驒牛燒肉) 2. 喫茶 こもれび (鐵板燒)。可順便去奧飛驒熊牧場買定聽日飛。', address: 'あんき屋' },
+
+                    // DAY 6
+                    { id: 601, dayIndex: 5, category: '景點', title: '奧飛驒熊牧場', time: '08:30 - 10:00', ticket: '自理', transitMode: 'driving', transitTime: '20分鐘車程', groupType: '', note: '餵熊體驗。電話：0578-89-2761', address: '奥飛騨クマ牧場' },
+                    { id: 602, dayIndex: 5, category: '景點', title: '新穗高高空纜車 (Shinhotaka Ropeway)', time: '10:00 - 14:00', ticket: '自理', transitMode: 'driving', transitTime: '20分鐘返平湯', groupType: '', note: '搭乘雙層纜車欣賞阿爾卑斯山絕景。地址：高山市奥飛騨温泉郷神坂710-7', address: '新穂高ロープウェイ' },
+                    { id: 603, dayIndex: 5, category: '景點', title: '下午放鬆：平湯之森 溫泉大露天風呂', time: '15:00', ticket: '自理', transitMode: 'walking', transitTime: '5分鐘', groupType: '', note: '返回平湯，享受森林圍繞的天然溫泉大露天泡湯。', address: 'ひらゆの森' },
+                    { id: 604, dayIndex: 5, category: '美食', title: '晚餐：於 喫茶 こもれび 或 あんき屋 享用', time: '18:00', ticket: '自理', transitMode: 'walking', transitTime: '步行返回', groupType: '', note: '再次享用美味的在地飛驒牛料理。', address: '喫茶こもれび' },
+                    { id: 605, dayIndex: 5, category: '住宿', title: '續住：平湯温泉 つゆくさ Cottage (獨立木屋) - 第2晚', time: '19:30 返回木屋', ticket: '', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '回到獨立小木屋續住第二晚，整理行李準備明天的長途自駕。', address: '平湯温泉 つゆくさ' },
+
+                    // DAY 7
+                    { id: 701, dayIndex: 6, category: '景點', title: 'ぎふ清流里山公園 (昭和農村風)', time: '12:00 - 15:30', ticket: '免費入園', transitMode: 'driving', transitTime: '1.5小時', groupType: '', note: '午餐：園內美食區 No.22 餐廳享用（營業至 14:00）。電話：0574-23-0066', address: 'ぎふ清流里山公園' },
+                    { id: 702, dayIndex: 6, category: '住宿', title: '入住：Grand Mercure Lake Biwa Resort & Spa', time: '17:00 Check-in', ticket: '泊車 500yen/晚', transitMode: 'driving', transitTime: '6-8分鐘車程', groupType: '', note: '2房 (每房 2 大 2 小，純住宿不含餐)。電話：0749-64-2000', address: 'グランドメルキュール琵琶湖リゾート＆スパ' },
+
+                    // DAY 8
+                    { id: 801, dayIndex: 7, category: '美食', title: '[早餐選項 1] Club HARIE J\'oublie le temps', time: '09:00', ticket: '自理', transitMode: 'driving', transitTime: '1小時', groupType: '', note: '彥根市海邊網網紅麵包小鎮 🥖 車程15分鐘。電話：0749-21-4477', address: 'クラブハリエ ジュブリルタン' },
+                    { id: 802, dayIndex: 7, category: '美食', title: '[早餐選項 2] Sweets & Cafe Dragee', time: '10:00', ticket: '自理', transitMode: 'driving', transitTime: '1小時', groupType: '', note: '可享用早午餐。車程約 8 分鐘。', address: 'Sweets & Cafe Dragee' },
+                    { id: 803, dayIndex: 7, category: '景點', title: '補完：滋賀県立琵琶湖博物館', time: '10:45 - 13:30', ticket: '自理', transitMode: 'driving', transitTime: '45分鐘', groupType: '', note: '第一天時間不夠，今天完整補回！午餐於內進食。電話：077-568-4811', address: '滋賀県立琵琶湖博物館' },
+                    { id: 804, dayIndex: 7, category: '景點', title: '任天堂博物館 (Nintendo Museum)', time: '15:00 - 19:00', ticket: '預約票', transitMode: 'driving', transitTime: '40分鐘', groupType: '', note: '咖啡廳「HATENA BURGER」可吃漢堡。地址：京都府宇治市小倉町神楽田56番地', address: 'ニンテンドーミュージアム' },
+                    { id: 805, dayIndex: 7, category: '住宿', title: '入住：大阪溫泉旅館 不死王閣 (Fushiohaku)', time: '20:30 Check-in', ticket: '含明日早餐', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '預約編號：0UM8K36C。分房：1房(4成1兒) / 2房(3成1小學1兒)。TEL: 072-751-3540', address: '不死王閣' },
+
+                    // DAY 9
+                    { id: 901, dayIndex: 8, category: '景點', title: '濱寺公園 (Hamadera Park) 交通遊園地', time: '11:30 - 14:00', ticket: '設有停車場', transitMode: 'driving', transitTime: '30分鐘', groupType: '', note: '小朋友最後放電！玩卡丁車、蒸汽火車等。TEL: 072-261-0936', address: '浜寺公園 交通遊園地' },
+                    { id: 902, dayIndex: 8, category: '購物', title: 'AEON MALL 臨空泉南 最後衝刺採購', time: '14:30 - 17:00', ticket: '免費泊車', transitMode: 'driving', transitTime: '15分鐘前往機場', groupType: '', note: '最後採購藥妝。地址：大阪府泉南市りんくう南浜3-12', address: 'イオンモールりんくう泉南' },
+                    { id: 903, dayIndex: 8, category: '航班', title: '返港：關西機場還車 ➔ UO 689 航班', time: '17:00 抵達機場', flightNo: 'UO 689', duration: '3h 10m', depAirport: 'KIX', depTime: '20:40', arrAirport: 'HKG', arrTime: '23:50', transitMode: 'walking', transitTime: '返抵香港', note: '辦理還車與登機。返回香港，圓滿結束旅程！', address: '' }
+                ]);
+
+                const modal = ref({ show: false, isEdit: false, targetId: null });
+                const modalData = ref({});
+
+                const currentDaySchedule = computed(() => {
+                    return masterSchedule.value.filter(item => item.dayIndex === selectedDayIndex.value);
+                });
+
+                const getPastelCardClass = (category) => {
+                    if (category === '景點') return 'bg-[#E6F4EA]/60 hover:bg-[#E6F4EA]/80';
+                    if (category === '美食') return 'bg-[#FCE8E6]/60 hover:bg-[#FCE8E6]/80';
+                    if (category === '住宿') return 'bg-[#E8F0FE]/60 hover:bg-[#E8F0FE]/80';
+                    return 'bg-[#F1F3F4]/70 hover:bg-[#F1F3F4]/90';
+                };
+
+                const getPastelBadgeClass = (category) => {
+                    if (category === '景點') return 'pastel-spot';
+                    if (category === '美食') return 'pastel-food';
+                    if (category === '住宿') return 'pastel-hotel';
+                    return 'pastel-other';
+                };
+
+                const getCategoryEmoji = (cat) => {
+                    const mapping = { '景點': '📸', '住宿': '🏨', '美食': '🥢', '購物': '🛍️', '航班': '✈️' };
+                    return mapping[cat] || '📍';
+                };
+
+                const getTransitIcon = (mode) => {
+                    if (mode === 'walking') return 'fa-solid fa-person-walking text-emerald-500';
+                    return 'fa-solid fa-car text-blue-500';
+                };
+
+                let sortableInstance = null;
+                const initSortable = () => {
+                    nextTick(() => {
+                        const el = document.getElementById('schedule-list');
+                        if (!el) return;
+                        if (sortableInstance) sortableInstance.destroy();
+                        sortableInstance = new Sortable(el, {
+                            handle: '.drag-handle',
+                            animation: 250,
+                            ghostClass: 'sortable-ghost',
+                            onEnd: () => {
+                                const newOrderIds = Array.from(el.children).map(child => parseInt(child.dataset.id)).filter(Boolean);
+                                const currentDayItems = masterSchedule.value.filter(item => item.dayIndex === selectedDayIndex.value);
+                                const reordered = newOrderIds.map(id => currentDayItems.find(i => i.id === id));
+                                const otherDaysItems = masterSchedule.value.filter(item => item.dayIndex !== selectedDayIndex.value);
+                                masterSchedule.value = [...otherDaysItems, ...reordered];
+                            }
+                        });
+                    });
+                };
+
+                watch([currentTab, selectedDayIndex], () => { if (currentTab.value === 'schedule') initSortable(); });
+                onMounted(() => { initSortable(); });
+
+                const openAddModal = () => {
+                    modal.value.isEdit = false;
+                    modal.value.show = true;
+                    modalData.value = { category: '景點', title: '', time: '', ticket: '', note: '', transitMode: 'driving', transitTime: '30分鐘', dayIndex: selectedDayIndex.value, address: '', groupType: '' };
+                };
+
+                const openEditModal = (item) => {
+                    modal.value.isEdit = true;
+                    modal.value.targetId = item.id;
+                    modalData.value = { ...item };
+                    modal.value.show = true;
+                };
+
+                const saveModalData = () => {
+                    if (modal.value.isEdit) {
+                        const idx = masterSchedule.value.findIndex(i => i.id === modal.value.targetId);
+                        if(idx !== -1) masterSchedule.value[idx] = { ...modalData.value };
+                    } else {
+                        masterSchedule.value.push({ id: Date.now(), ...modalData.value });
+                    }
+                    modal.value.show = false;
+                };
+
+                const confirmDelete = () => {
+                    if (confirm("⚠️ 確定要刪除此項目嗎？此操作無法還原。")) {
+                        masterSchedule.value = masterSchedule.value.filter(i => i.id !== modal.value.targetId);
+                        modal.value.show = false;
+                    }
+                };
+
+                return {
+                    currentTab, daysList, selectedDayIndex, currentWeatherData, exchange, masterSchedule,
+                    currentDaySchedule, modal, modalData, getPastelCardClass, getPastelBadgeClass, getCategoryEmoji, 
+                    getTransitIcon, openAddModal, openEditModal, saveModalData, confirmDelete
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
