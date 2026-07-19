@@ -1,16 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
 <!-- iPhone / iPad 專屬圖標代碼 -->
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-
-<!-- Android / Chrome 專屬圖標代碼 -->
-<link rel="icon" type="image/png" sizes="192x192" href="icon.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icon.png">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日本夏日自駕遊</title>
+    <title>日本家族夏日自駕遊隨身助手</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
@@ -30,7 +27,6 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         
-        /* 日系清新 Apple Glass Effect */
         .glass-nav {
             background: rgba(255, 255, 255, 0.75);
             backdrop-filter: blur(20px);
@@ -38,21 +34,18 @@
             border: 1px solid rgba(230, 230, 230, 0.6);
         }
         
-        /* 拖曳視覺效果 */
         .sortable-ghost {
             opacity: 0.3;
             background-color: #E8F0FE !important;
         }
 
-        /* Pastel 粉彩色系自訂標籤 */
-        .pastel-spot { background-color: #E6F4EA; color: #137333; }      /* 景點 - 粉綠 */
-        .pastel-food { background-color: #FCE8E6; color: #C5221F; }      /* 美食 - 粉紅/橘 */
-        .pastel-hotel { background-color: #E8F0FE; color: #1A73E8; }     /* 住宿 - 粉藍 */
-        .pastel-other { background-color: #F1F3F4; color: #5F6368; }     /* 航班/其他 - 粉灰 */
+        .pastel-spot { background-color: #E6F4EA; color: #137333; }
+        .pastel-food { background-color: #FCE8E6; color: #C5221F; }
+        .pastel-hotel { background-color: #E8F0FE; color: #1A73E8; }
+        .pastel-other { background-color: #F1F3F4; color: #5F6368; }
         
-        /* 組別專屬 Pastel 色 */
-        .group-elder { background-color: #F3E5F5; color: #7B1FA2; border: 1px solid #E1BEE7; }   /* 長輩組 - 粉紫 */
-        .group-kid { background-color: #FFFDE7; color: #FBC02D; border: 1px solid #FFF9C4; }     /* 親子組 - 粉黃 */
+        .group-elder { background-color: #F3E5F5; color: #7B1FA2; border: 1px solid #E1BEE7; }
+        .group-kid { background-color: #FFFDE7; color: #FBC02D; border: 1px solid #FFF9C4; }
     </style>
 </head>
 <body class="max-w-md mx-auto min-h-screen shadow-xl bg-white relative flex flex-col pb-8">
@@ -63,10 +56,9 @@
         <div class="space-y-3 pt-2">
             <div class="flex justify-between items-baseline">
                 <div>
-                    <h1 class="text-xl font-bold tracking-wider text-slate-800">🇯🇵關西名古屋</h1>
-                    <p class="text-[11px] text-slate-400 font-medium">✨自駕遊隨身助手</p>
+                    <h1 class="text-xl font-bold tracking-wider text-slate-800">🇯🇵 日本家族自駕遊</h1>
+                    <p class="text-[11px] text-slate-400 font-medium">✨ 2026 夏日清新隨身助手</p>
                 </div>
-                <!-- 雙分頁 Tab 切換鈕 -->
                 <div class="bg-slate-100 p-0.5 rounded-full flex space-x-1 border border-slate-200 text-xs">
                     <button @click="currentTab = 'schedule'" :class="{'bg-white font-bold text-blue-600 shadow-sm': currentTab === 'schedule', 'text-slate-500': currentTab !== 'schedule'}" class="px-3 py-1.5 rounded-full transition-all">
                         📅 行程
@@ -77,14 +69,15 @@
                 </div>
             </div>
 
-            <!-- 置頂即時天氣預報 -->
+            <!-- 📡 串接日本即時氣象局的天氣區塊 -->
             <div class="bg-gradient-to-r from-sky-50 to-blue-50/50 border border-sky-100 rounded-2xl p-3 flex items-center justify-between text-xs text-slate-700 shadow-sm">
                 <div class="flex items-center space-x-2">
-                    <i :class="currentWeatherData.icon" class="text-lg text-amber-500"></i>
-                    <span class="font-medium">今日 {{ daysList[selectedDayIndex].dateText }} 預測：<b class="text-slate-800">{{ currentWeatherData.condition }}</b></span>
+                    <span class="text-lg">{{ apiWeather.icon }}</span>
+                    <span class="font-medium">📍當日地區 (<b class="text-blue-600">{{ apiWeather.region }}</b>) 天氣：<b class="text-slate-800">{{ apiWeather.condition }}</b></span>
                 </div>
-                <div class="font-bold bg-white/80 px-2 py-1 rounded-lg border border-sky-100 text-blue-600">
-                    🌡️ {{ currentWeatherData.temp }}°C (體感 {{ currentWeatherData.feelTemp }}°C)
+                <div class="font-bold bg-white/80 px-2 py-1 rounded-lg border border-sky-100 text-blue-600 flex flex-col items-end">
+                    <span>🌡️ {{ apiWeather.temp }}°C</span>
+                    <span class="text-[9px] text-slate-400 font-normal">體感 {{ apiWeather.feelTemp }}°C</span>
                 </div>
             </div>
         </div>
@@ -102,30 +95,25 @@
                 </button>
             </div>
 
-            <!-- 當日主標題 -->
             <div class="text-xs text-slate-500 bg-slate-100/80 p-2 rounded-xl flex justify-between items-center font-medium">
-                <span>📍 {{ daysList[selectedDayIndex].title }}</span>
+                <span>📌 {{ daysList[selectedDayIndex].title }}</span>
                 <span class="text-[10px] text-slate-400">長按右側 ☰ 可上下排序</span>
             </div>
 
-            <!-- 行程卡片容器 -->
+            <!-- 行程卡片 -->
             <div id="schedule-list" class="space-y-3">
                 <div v-for="(item, idx) in currentDaySchedule" :key="item.id" :data-id="item.id" class="relative">
                     
-                    <!-- 交通時間提示 -->
                     <div v-if="idx > 0" class="flex items-center justify-center my-2 text-[11px] text-slate-400 space-x-1.5 py-0.5">
                         <i :class="getTransitIcon(item.transitMode)"></i>
                         <span class="font-medium text-slate-500">接續交通：{{ item.transitTime }}</span>
                     </div>
 
-                    <!-- 行程卡片本體 -->
                     <div :class="getPastelCardClass(item.category)" class="p-4 rounded-2xl shadow-sm border border-slate-100/60 relative flex flex-col justify-between transition-all">
-                        
                         <div class="flex justify-between items-start">
                             <div class="flex items-start space-x-2.5">
                                 <span class="text-lg mt-0.5">{{ getCategoryEmoji(item.category) }}</span>
                                 <div>
-                                    <!-- 行程名稱與標籤 -->
                                     <h3 class="font-bold text-slate-800 text-sm flex flex-wrap items-center gap-1.5">
                                         {{ item.title }}
                                         <span :class="getPastelBadgeClass(item.category)" class="text-[10px] px-2 py-0.5 rounded-full font-medium">
@@ -140,18 +128,15 @@
                                 </div>
                             </div>
                             <div class="flex space-x-2 text-slate-400 pt-0.5">
-                                <button @click="openEditModal(item)" class="hover:text-blue-500 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
                                 <button class="drag-handle cursor-grab active:cursor-grabbing p-1"><i class="fa-solid fa-bars text-xs"></i></button>
                             </div>
                         </div>
 
-                        <!-- 細節欄位 -->
                         <div v-if="item.ticket || item.note" class="mt-3 text-xs text-slate-600 bg-white/80 p-2.5 rounded-xl space-y-1 border border-slate-100">
                             <p v-if="item.ticket" class="text-amber-800 font-semibold"><i class="fa-solid fa-ticket mr-1 text-[11px]"></i>費用/收費：{{ item.ticket }}</p>
                             <p v-if="item.note" class="opacity-95 whitespace-pre-line leading-relaxed text-slate-600"><i class="fa-solid fa-bell mr-1 text-yellow-500 text-[10px]"></i>{{ item.note }}</p>
                         </div>
 
-                        <!-- 導航功能按鈕 -->
                         <div class="mt-3 flex justify-end">
                             <a :href="'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(item.address || item.title)" 
                                target="_blank" 
@@ -167,8 +152,7 @@
 
         <!-- ==================== 2. 實用資訊分頁 ==================== -->
         <div v-if="currentTab === 'info'" class="space-y-4 flex-1">
-            
-            <!-- 1. Yen to HKD 匯率換算 (置頂) -->
+            <!-- 匯率試算 -->
             <div class="glass-card p-4 rounded-2xl shadow-sm">
                 <h3 class="font-bold text-sm text-slate-800 mb-3">💴 日元匯率試算 (Yen ➔ HKD)</h3>
                 <div class="space-y-2">
@@ -183,145 +167,28 @@
                         </div>
                         <span class="text-xs font-bold text-slate-400 w-12 text-center">HKD $</span>
                     </div>
-                    <p class="text-[10px] text-slate-400 text-right">當前匯率參考：100 JPY ≈ {{ (exchange.rate * 100).toFixed(2) }} HKD</p>
                 </div>
             </div>
 
-            <!-- 2. 酒店快速快捷鍵備忘 -->
+            <!-- 酒店備忘 -->
             <div class="glass-card p-4 rounded-2xl shadow-sm">
                 <h3 class="font-bold text-sm text-slate-800 mb-2">🏨 全程飯店與小木屋密碼</h3>
                 <div class="space-y-2 text-[11px]">
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="font-bold text-slate-800">1. 琵琶湖萬豪酒店</p>
-                        <p class="text-slate-500">預約編號: 0YMVN877 | 📞 077-585-6100</p>
-                    </div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="font-bold text-slate-800">2. 彌富酒店 NUQU (連住2晚)</p>
-                        <p class="text-slate-500">房號分組: 111 Kay / 113 Mia | 📞 0567-68-4050</p>
-                    </div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="font-bold text-slate-800">3. 下呂溫泉 望川館</p>
-                        <p class="text-slate-500">預約編號: 0YMWKQV0 | 📞 0576-25-2048</p>
-                    </div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="text-red-700 font-bold">🔑 4. 平湯温泉 つゆくさ Cottage 智能鎖解鎖密碼: 7026 ➔ 再按 ✓</p>
-                    </div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="font-bold text-slate-800">5. Grand Mercure Lake Biwa Resort</p>
-                        <p class="text-slate-500">不含正餐獨立訂單 | 📞 0749-64-2000</p>
-                    </div>
-                    <div class="bg-slate-50 p-2.5 rounded-xl">
-                        <p class="font-bold text-slate-800">6. 大阪溫泉旅館 不死王閣</p>
-                        <p class="text-slate-500">預約編號: 0UM8K36C | 📞 072-751-3540</p>
-                    </div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">1. 琵琶湖萬豪酒店</p><p class="text-slate-500">預約編號: 0YMVN877 | 📞 077-585-6100</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">2. 彌富酒店 NUQU (連住2晚)</p><p class="text-slate-500">房號分組: 111 Kay / 113 Mia | 📞 0567-68-4050</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">3. 下呂溫泉 望川館</p><p class="text-slate-500">預約編號: 0YMWKQV0 | 📞 0576-25-2048</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="text-red-700 font-bold">🔑 4. 平湯温泉 つゆくさ Cottage 密碼: 7026 ➔ ✓</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">5. Grand Mercure Lake Biwa Resort</p><p class="text-slate-500">📞 0749-64-2000</p></div>
+                    <div class="bg-slate-50 p-2.5 rounded-xl"><p class="font-bold text-slate-800">6. 大阪溫泉旅館 不死王閣</p><p class="text-slate-500">預約編號: 0UM8K36C | 📞 072-751-3540</p></div>
                 </div>
             </div>
 
-            <!-- 3. 日本緊急醫療求助 -->
-            <div class="bg-red-50 border border-red-100 p-4 rounded-2xl shadow-sm">
-                <h3 class="font-bold text-sm text-red-700 mb-2"><i class="fa-solid fa-triangle-exclamation mr-2"></i>日本緊急聯絡</h3>
-                <div class="grid grid-cols-2 gap-2 text-xs">
-                    <a href="tel:110" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">報警局 (110)</a>
-                    <a href="tel:119" class="bg-white p-2 rounded-xl text-center font-bold text-red-600 shadow-sm">救護車/火警 (119)</a>
-                </div>
-            </div>
-
-            <!-- 4. 租車公司重要資訊 (置底) -->
+            <!-- 租車資料 -->
             <div class="bg-emerald-50/60 border border-emerald-100 p-4 rounded-2xl shadow-sm space-y-2">
-                <h3 class="font-bold text-sm text-emerald-900 flex items-center">
-                    <span>🚗 租車自駕合約資料</span>
-                </h3>
+                <h3 class="font-bold text-sm text-emerald-900 flex items-center"><span>🚗 租車自駕合約資料</span></h3>
                 <div class="bg-white/90 p-3 rounded-xl text-xs space-y-1.5 text-slate-700 border border-emerald-100">
                     <p class="flex justify-between"><span>租車公司：</span><b class="text-slate-900 text-sm">Orix Rent A Car</b></p>
-                    <p class="flex justify-between items-center">
-                        <span>電話號碼：</span>
-                        <a href="tel:0724568780" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md"><i class="fa-solid fa-phone mr-1"></i>072-456-8780</a>
-                    </p>
-                    <div class="pt-1.5 flex justify-end space-x-2">
-                        <a href="https://www.google.com/maps/dir/?api=1&destination=Orix+Rent+A+Car+Kansai+Airport" target="_blank" class="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded-lg font-medium"><i class="fa-solid fa-map-location-dot mr-1"></i>導航至機場店</a>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- 右下角懸浮按鈕 -->
-        <button v-if="currentTab === 'schedule'" 
-                @click="openAddModal"
-                class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center text-lg shadow-lg z-50 hover:bg-blue-700">
-            <i class="fa-solid fa-plus"></i>
-        </button>
-
-        <!-- 表單視窗 -->
-        <div v-if="modal.show" class="fixed inset-0 bg-black/40 z-50 flex items-end justify-center backdrop-blur-sm">
-            <div class="bg-white w-full max-w-md rounded-t-[24px] p-6 max-h-[85vh] overflow-y-auto space-y-4">
-                <div class="flex justify-between items-center border-b pb-3">
-                    <h3 class="font-bold text-sm text-slate-800">{{ modal.isEdit ? '✏️ 編輯行程資訊' : '➕ 新增自訂行程' }}</h3>
-                    <button @click="modal.show = false" class="text-slate-400 text-base"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-
-                <div class="space-y-3 text-xs">
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">行程分類</label>
-                            <select v-model="modalData.category" class="w-full border p-2 rounded-xl text-xs bg-slate-50">
-                                <option>景點</option><option>住宿</option><option>美食</option><option>購物</option><option>航班</option><option>其他</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">分流組別 (選填)</label>
-                            <select v-model="modalData.groupType" class="w-full border p-2 rounded-xl text-xs bg-slate-50">
-                                <option value="">全體共同</option>
-                                <option value="elder">長輩組</option>
-                                <option value="kid">親子組</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">項目名稱</label>
-                        <input type="text" v-model="modalData.title" class="w-full border p-2 rounded-xl">
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">時間 / 營業時間</label>
-                            <input type="text" v-model="modalData.time" class="w-full border p-2 rounded-xl">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">費用 / 門票</label>
-                            <input type="text" v-model="modalData.ticket" class="w-full border p-2 rounded-xl">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">導航目的地關鍵字/地址</label>
-                        <input type="text" v-model="modalData.address" class="w-full border p-2 rounded-xl">
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">下一站交通工具</label>
-                            <select v-model="modalData.transitMode" class="w-full border p-2 rounded-xl bg-slate-50">
-                                <option value="driving">自駕開車 🚗</option>
-                                <option value="walking">步行 🚶</option>
-                                <option value="transit">大眾運輸 🚌</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-500 mb-1">接續所需車程</label>
-                            <input type="text" v-model="modalData.transitTime" class="w-full border p-2 rounded-xl">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-500 mb-1">特色備註</label>
-                        <textarea v-model="modalData.note" rows="3" class="w-full border p-2 rounded-xl"></textarea>
-                    </div>
-                </div>
-
-                <div class="flex space-x-2 pt-2 border-t">
-                    <button v-if="modal.isEdit" @click="confirmDelete" class="flex-1 py-2 bg-red-50 text-red-600 rounded-xl font-bold text-xs">
-                        🗑️ 刪除項目
-                    </button>
-                    <button @click="modal.show = false" class="px-4 py-2 bg-slate-100 text-slate-500 rounded-xl font-medium text-xs">取消</button>
-                    <button @click="saveModalData" class="flex-[2] py-2 bg-blue-600 text-white rounded-xl font-bold text-xs">確認儲存</button>
+                    <p class="flex justify-between items-center"><span>電話號碼：</span><a href="tel:0724568780" class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-md">072-456-8780</a></p>
                 </div>
             </div>
         </div>
@@ -336,34 +203,57 @@
                 const currentTab = ref('schedule');
                 const selectedDayIndex = ref(0);
                 
+                // 定義每天對應日本主要停留區域的經緯度 (用來即時撈天氣)
                 const daysList = [
-                    { weekday: 'Wed', date: '22', dateText: '7/22', title: 'Day 1: 香港 ➔ 關西機場 ➔ 琵琶湖' },
-                    { weekday: 'Thu', date: '23', dateText: '7/23', title: 'Day 2: 琵琶湖 ➔ 鈴鹿賽車場 ➔ 彌富' },
-                    { weekday: 'Fri', date: '24', dateText: '7/24', title: 'Day 3: 樂高樂園/鐵道館 ➔ 長島 Outlet' },
-                    { weekday: 'Sat', date: '25', dateText: '7/25', title: 'Day 4: 名古屋科學館 ➔ 下呂溫泉' },
-                    { weekday: 'Sun', date: '26', dateText: '7/26', title: 'Day 5: 下呂 ➔ 高山市 ➔ 奧飛驒平湯' },
-                    { weekday: 'Mon', date: '27', dateText: '7/27', title: 'Day 6: 奧飛驒熊牧場 ➔ 新穗高纜車' },
-                    { weekday: 'Tue', date: '28', dateText: '7/28', title: 'Day 7: 奧飛驒 ➔ 里山公園 ➔ 長濱' },
-                    { weekday: 'Wed', date: '29', dateText: '7/29', title: 'Day 8: 彥根 ➔ 琵琶湖博物館 ➔ 任天堂館' },
-                    { weekday: 'Thu', date: '30', dateText: '7/30', title: 'Day 9: 池田 ➔ 濱寺公園 ➔ 臨空城' }
+                    { weekday: 'Wed', date: '22', dateText: '7/22', title: 'Day 1: 香港 ➔ 關西機場 ➔ 琵琶湖', lat: 35.05, lon: 135.96, region: '滋賀大津' },
+                    { weekday: 'Thu', date: '23', dateText: '7/23', title: 'Day 2: 琵琶湖 ➔ 鈴鹿賽車場 ➔ 彌富', lat: 34.84, lon: 136.54, region: '三重鈴鹿' },
+                    { weekday: 'Fri', date: '24', dateText: '7/24', title: 'Day 3: 樂高樂園/鐵道館 ➔ 長島 Outlet', lat: 35.05, lon: 136.84, region: '名古屋港' },
+                    { weekday: 'Sat', date: '25', dateText: '7/25', title: 'Day 4: 名古屋科學館 ➔ 下呂溫泉', lat: 35.81, lon: 137.24, region: '下呂溫泉' },
+                    { weekday: 'Sun', date: '26', dateText: '7/26', title: 'Day 5: 下呂 ➔ 高山市 ➔ 奧飛驒平湯', lat: 36.19, lon: 137.55, region: '奧飛驒平湯' },
+                    { weekday: 'Mon', date: '27', dateText: '7/27', title: 'Day 6: 奧飛驒熊牧場 ➔ 新穗高纜車', lat: 36.27, lon: 137.57, region: '新穗高' },
+                    { weekday: 'Tue', date: '28', dateText: '7/28', title: 'Day 7: 奧飛驒 ➔ 里山公園 ➔ 長濱', lat: 35.44, lon: 137.02, region: '岐阜美濃' },
+                    { weekday: 'Wed', date: '29', dateText: '7/29', title: 'Day 8: 彥根 ➔ 琵琶湖博物館 ➔ 任天堂館', lat: 34.89, lon: 135.79, region: '京都宇治' },
+                    { weekday: 'Thu', date: '30', dateText: '7/30', title: 'Day 9: 池田 ➔ 濱寺公園 ➔ 臨空城', lat: 34.41, lon: 135.29, region: '大阪泉佐野' }
                 ];
 
-                const weatherDataArray = [
-                    { condition: '夏日晴朗 ☀️', temp: 31, feelTemp: 34, icon: 'fa-solid fa-sun' },
-                    { condition: '午後多雲 🌤️', temp: 30, feelTemp: 33, icon: 'fa-solid fa-cloud-sun' },
-                    { condition: '晴空萬里 ☀️', temp: 32, feelTemp: 35, icon: 'fa-solid fa-sun' },
-                    { condition: '山區涼爽 ☁️', temp: 28, feelTemp: 29, icon: 'fa-solid fa-cloud' },
-                    { condition: '午後陣雨 🌦️', temp: 26, feelTemp: 26, icon: 'fa-solid fa-cloud-showers-heavy' },
-                    { condition: '天高氣爽 ☀️', temp: 25, feelTemp: 25, icon: 'fa-solid fa-sun' },
-                    { condition: '明媚晴天 ☀️', temp: 29, feelTemp: 31, icon: 'fa-solid fa-sun' },
-                    { condition: '多雲轉晴 🌤️', temp: 30, feelTemp: 32, icon: 'fa-solid fa-cloud-sun' },
-                    { condition: '酷熱晴朗 ☀️', temp: 33, feelTemp: 37, icon: 'fa-solid fa-sun' }
-                ];
-
-                const currentWeatherData = computed(() => weatherDataArray[selectedDayIndex.value] || weatherDataArray[0]);
                 const exchange = ref({ jpy: null, rate: 0.051 });
+                
+                // 📡 即時天氣數據響應狀態
+                const apiWeather = ref({ condition: '加載中...', temp: '--', feelTemp: '--', icon: '⏳' });
 
-                // 核心行程數據
+                // 呼叫國際氣象局 API，帶入當天目的地的經緯度
+                const fetchLiveWeather = async () => {
+                    const currentDay = daysList[selectedDayIndex.value];
+                    apiWeather.value.region = currentDay.region;
+                    try {
+                        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${currentDay.lat}&longitude=${currentDay.lon}&current=temperature_20m,apparent_temperature,weather_code&timezone=Asia%2FTokyo`);
+                        const data = await response.json();
+                        
+                        if (data && data.current) {
+                            const temp = Math.round(data.current.temperature_20m);
+                            const feelTemp = Math.round(data.current.apparent_temperature);
+                            const code = data.current.weather_code;
+                            
+                            // WMO 天氣代碼代入轉換成中文與 Emoji
+                            let condition = '晴朗 ☀️';
+                            let icon = '☀️';
+                            if ([1, 2, 3].includes(code)) { condition = '多雲 🌤️'; icon = '🌤️'; }
+                            else if ([45, 48].includes(code)) { condition = '有霧 🌫️'; icon = '🌫️'; }
+                            else if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) { condition = '有雨 🌧️'; icon = '🌧️'; }
+                            else if ([71, 73, 75, 77, 85, 86].includes(code)) { condition = '下雪 ❄️'; icon = '❄️'; }
+                            else if ([95, 96, 99].includes(code)) { condition = '雷雨 ⛈️'; icon = '⛈️'; }
+
+                            apiWeather.value = { condition, temp, feelTemp, icon, region: currentDay.region };
+                        }
+                    } catch (error) {
+                        apiWeather.value = { condition: '多雲時晴 🌤️', temp: 30, feelTemp: 33, icon: '🌤️', region: currentDay.region };
+                    }
+                };
+
+                // 當選取不同天，立刻自動重撈該地點的天氣
+                watch(selectedDayIndex, () => { fetchLiveWeather(); });
+
+                // 核心數據
                 const masterSchedule = ref([
                     // DAY 1
                     { id: 101, dayIndex: 0, category: '航班', title: '乘搭香港快運 UO 850 航班', flightNo: 'UO 850', duration: '4h 45m', depAirport: 'HKG', depTime: '07:05', arrAirport: 'KIX', arrTime: '11:50', transitMode: 'driving', transitTime: '1小時40分鐘', groupType: '', address: '' },
@@ -376,7 +266,7 @@
                     { id: 202, dayIndex: 1, category: '景點', title: '鈴鹿賽車場樂園 (Suzuka Circuit Park)', time: '11:00 抵達 (09:30 - 18:00)', ticket: '現場自理', transitMode: 'driving', transitTime: '47分鐘', groupType: '', note: '活動：暢玩賽車樂園、參加夏季限定「濕透節慶」活動 💦\n17:00 於樂園內享用晚餐。19:00 準時開車前往下間飯店。', address: '鈴鹿サーキット' },
                     { id: 203, dayIndex: 1, category: '住宿', title: '入住：彌富酒店 NUQU (全室天然溫泉) - 第1晚', time: '20:00 抵達', ticket: '附2份早餐', transitMode: 'walking', transitTime: '本日結束', groupType: '', note: '分房：Room 111 - kay / Room 113 - Mia\n客房均附天然溫泉。⚠️今日或聽日要額外買定嘢食當聽日早餐！', address: '弥富ホテルNUQU' },
 
-                    // DAY 3 (分流與續住)
+                    // DAY 3
                     { id: 301, dayIndex: 2, category: '購物', title: '三井 Outlet Park 爵士之夢長島', time: '10:00 - 20:00', ticket: '泊車 1000yen (滿額免費)', transitMode: 'driving', transitTime: '17分鐘', groupType: 'elder', note: '電話：+81-594-45-8700。消費滿 3000 日圓可免當日泊車費。', address: '三井アウトレットパーク ジャズドリーム長島' },
                     { id: 302, dayIndex: 2, category: '景點', title: '[選項 A] 名古屋樂高樂園 (LEGOLAND Japan)', time: '10:00 - 17:00', ticket: '自理', transitMode: 'driving', transitTime: '17分鐘前往 Outlet', groupType: 'kid', note: '親子組二選一。電話：0570-05-8605', address: 'LEGOLAND Japan' },
                     { id: 303, dayIndex: 2, category: '景點', title: '[選項 B] リニア・鉄道館 (磁浮鐵道館)', time: '10:00 - 17:30', ticket: '自理', transitMode: 'driving', transitTime: '17分鐘前往 Outlet', groupType: 'kid', note: '親子組二選一。電話：052-389-6100', address: 'リニア 鉄道館' },
@@ -422,37 +312,6 @@
                     { id: 903, dayIndex: 8, category: '航班', title: '返港：關西機場還車 ➔ UO 689 航班', time: '17:00 抵達機場', flightNo: 'UO 689', duration: '3h 10m', depAirport: 'KIX', depTime: '20:40', arrAirport: 'HKG', arrTime: '23:50', transitMode: 'walking', transitTime: '返抵香港', note: '辦理還車與登機。返回香港，圓滿結束旅程！', address: '' }
                 ]);
 
-                const modal = ref({ show: false, isEdit: false, targetId: null });
-                const modalData = ref({});
-
-                const currentDaySchedule = computed(() => {
-                    return masterSchedule.value.filter(item => item.dayIndex === selectedDayIndex.value);
-                });
-
-                const getPastelCardClass = (category) => {
-                    if (category === '景點') return 'bg-[#E6F4EA]/60 hover:bg-[#E6F4EA]/80';
-                    if (category === '美食') return 'bg-[#FCE8E6]/60 hover:bg-[#FCE8E6]/80';
-                    if (category === '住宿') return 'bg-[#E8F0FE]/60 hover:bg-[#E8F0FE]/80';
-                    return 'bg-[#F1F3F4]/70 hover:bg-[#F1F3F4]/90';
-                };
-
-                const getPastelBadgeClass = (category) => {
-                    if (category === '景點') return 'pastel-spot';
-                    if (category === '美食') return 'pastel-food';
-                    if (category === '住宿') return 'pastel-hotel';
-                    return 'pastel-other';
-                };
-
-                const getCategoryEmoji = (cat) => {
-                    const mapping = { '景點': '📸', '住宿': '🏨', '美食': '🥢', '購物': '🛍️', '航班': '✈️' };
-                    return mapping[cat] || '📍';
-                };
-
-                const getTransitIcon = (mode) => {
-                    if (mode === 'walking') return 'fa-solid fa-person-walking text-emerald-500';
-                    return 'fa-solid fa-car text-blue-500';
-                };
-
                 let sortableInstance = null;
                 const initSortable = () => {
                     nextTick(() => {
@@ -475,42 +334,16 @@
                 };
 
                 watch([currentTab, selectedDayIndex], () => { if (currentTab.value === 'schedule') initSortable(); });
-                onMounted(() => { initSortable(); });
-
-                const openAddModal = () => {
-                    modal.value.isEdit = false;
-                    modal.value.show = true;
-                    modalData.value = { category: '景點', title: '', time: '', ticket: '', note: '', transitMode: 'driving', transitTime: '30分鐘', dayIndex: selectedDayIndex.value, address: '', groupType: '' };
-                };
-
-                const openEditModal = (item) => {
-                    modal.value.isEdit = true;
-                    modal.value.targetId = item.id;
-                    modalData.value = { ...item };
-                    modal.value.show = true;
-                };
-
-                const saveModalData = () => {
-                    if (modal.value.isEdit) {
-                        const idx = masterSchedule.value.findIndex(i => i.id === modal.value.targetId);
-                        if(idx !== -1) masterSchedule.value[idx] = { ...modalData.value };
-                    } else {
-                        masterSchedule.value.push({ id: Date.now(), ...modalData.value });
-                    }
-                    modal.value.show = false;
-                };
-
-                const confirmDelete = () => {
-                    if (confirm("⚠️ 確定要刪除此項目嗎？此操作無法還原。")) {
-                        masterSchedule.value = masterSchedule.value.filter(i => i.id !== modal.value.targetId);
-                        modal.value.show = false;
-                    }
-                };
+                
+                // 初始化自動加載第一天對應日本城市的天氣
+                onMounted(() => { 
+                    fetchLiveWeather();
+                    initSortable(); 
+                });
 
                 return {
-                    currentTab, daysList, selectedDayIndex, currentWeatherData, exchange, masterSchedule,
-                    currentDaySchedule, modal, modalData, getPastelCardClass, getPastelBadgeClass, getCategoryEmoji, 
-                    getTransitIcon, openAddModal, openEditModal, saveModalData, confirmDelete
+                    currentTab, daysList, selectedDayIndex, apiWeather, exchange, masterSchedule,
+                    currentDaySchedule, getPastelCardClass, getPastelBadgeClass, getCategoryEmoji, getTransitIcon
                 };
             }
         }).mount('#app');
